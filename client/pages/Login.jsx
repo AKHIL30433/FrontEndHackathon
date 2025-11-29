@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import PublicLayout from "@/components/layouts/PublicLayout";
@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2 } from "lucide-react";
+import SimpleCaptcha from "@/components/ui/simple-captcha";
 
 const Login = () => {
     const navigate = useNavigate();
@@ -16,6 +17,7 @@ const Login = () => {
     const [activeTab, setActiveTab] = useState("student");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
+    const captchaRef = useRef(null);
 
     const [formData, setFormData] = useState({
         email: "",
@@ -34,6 +36,13 @@ const Login = () => {
         e.preventDefault();
         setLoading(true);
         setError("");
+
+        // Validate CAPTCHA first
+        if (!captchaRef.current?.validate()) {
+            setError("Please solve the security check correctly");
+            setLoading(false);
+            return;
+        }
 
         try {
             const endpoint = activeTab === "admin" ? "/api/admin/login" : "/api/student/login";
@@ -58,6 +67,8 @@ const Login = () => {
             navigate(activeTab === "admin" ? "/admin/dashboard" : "/student/dashboard");
         } catch (err) {
             setError(err.message);
+            // Reset CAPTCHA on failed login
+            captchaRef.current?.reset();
         } finally {
             setLoading(false);
         }
@@ -114,6 +125,9 @@ const Login = () => {
                                         />
                                     </div>
 
+                                    {/* CAPTCHA Component */}
+                                    <SimpleCaptcha ref={captchaRef} />
+
                                     <Button type="submit" className="w-full" disabled={loading}>
                                         {loading ? (
                                             <>
@@ -160,6 +174,9 @@ const Login = () => {
                                             required
                                         />
                                     </div>
+
+                                    {/* CAPTCHA Component */}
+                                    <SimpleCaptcha ref={captchaRef} />
 
                                     <Button type="submit" className="w-full" disabled={loading}>
                                         {loading ? (
